@@ -31,6 +31,11 @@ const postSchema = new mongoose.Schema({
         type: String,
         required: [true, "Author is required"]
     },
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: [true, "Author id is required"]
+    },
     title: {
         type: String,
         required: [true, "Title is required"]
@@ -51,11 +56,6 @@ const postSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    comments: {
-        type: Array,
-        required: false,
-
-    },
     tags: {
         type: Array,
         required: false
@@ -71,8 +71,18 @@ const postSchema = new mongoose.Schema({
   }
 )
 
-
-
+postSchema.virtual('comments', {
+    ref: 'Comment',
+    foreignField: 'post',
+    localField: '_id'
+})
+postSchema.pre(/^find/, function(next) {
+    this.populate({
+        path: 'user',
+        select: 'name photo'
+    })
+    next();
+})
 const Post = mongoose.model('Post', postSchema);
 
 module.exports = Post;

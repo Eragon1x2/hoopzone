@@ -6,7 +6,7 @@ const catchAsync = require('../utils/catchAsync');
 
 exports.getAllPosts = async(req, res) => {
     try {
-        const posts = await Post.find();
+        const posts = await Post.find().populate('comments').populate('user');
         res.status(200).json({
             "status": "success",
             "results": posts.length,
@@ -24,7 +24,12 @@ exports.getAllPosts = async(req, res) => {
 
 exports.createPost = async (req, res) => {
    try {
-    const post = await Post.create({...req.body, date_posted: Date.now().toString()})
+    const postData = {
+        ...req.body,
+        user: req.user.id,
+        author: req.user.name
+    }
+    const post = await Post.create({...postData, date_posted: Date.now().toString()});
     res.status(201).json({
         "status": "success",
         "data": {

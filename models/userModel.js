@@ -16,6 +16,11 @@ const userSchema = new mongoose.Schema({
     photo: {
         type: String
     },
+    role: {
+        type: String,
+        enum: ["user", "admin"],
+        default: "user"
+    },
     password: {
         type: String,
         required: [true, "Password is required"],
@@ -32,8 +37,18 @@ const userSchema = new mongoose.Schema({
             },
             message: "Passwords do not match"
         }
-    }
-});
+    },
+    // posts: [{
+    //     type: mongoose.Schema.ObjectId,
+    //     ref: "Post"
+    // }],
+    passwordChangedAt: Date,
+    
+},
+{
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+  });
 
 userSchema.pre("save", async function(next) {
     // run this code before the document is saved and when a document is modified
@@ -44,6 +59,37 @@ userSchema.pre("save", async function(next) {
     }
     next();
 })
+
+// userSchema.pre(/^find/, function(next) {
+//     this.populate({
+//         path: 'posts'
+//     })
+//     next();
+// })
+
+
+
+
+userSchema.virtual('posts', {
+    ref: 'Post',
+    foreignField: 'user',
+    localField: '_id'
+})
+
+userSchema.methods.correctPassword = async function(candidatePassword, userPassword) {
+return await bcrypt.compare(candidatePassword, userPassword);
+}
+
+userSchema.methods.changedPasswordAfter = function(JWTTimestamp) {
+    if(this.passwordChangedAt) {
+        const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10);
+        console.log(changedTimestamp, JWTTimestamp);
+        return JWTTimestamp < changedTimestamp;
+    }
+    // False means NOT changed
+    return false;
+}
+
 
 const User = mongoose.model('User', userSchema);
 
